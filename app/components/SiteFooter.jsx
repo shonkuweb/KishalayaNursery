@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FaCcVisa, FaCcMastercard, FaCcAmex } from "react-icons/fa";
 import { SiPaytm, SiPhonepe, SiGooglepay, SiRazorpay } from "react-icons/si";
 import { MdAccountBalanceWallet } from "react-icons/md";
@@ -26,7 +27,7 @@ export default function SiteFooter() {
         <p>Privacy Policy</p>
         <p>Shipping Policy</p>
         <p>Refund Policy</p>
-        <p>Track Your Order</p>
+        <Link href="/track-order" className="footer-link">Track Your Order</Link>
       </div>
       <div className="footer-payments">
         <p className="footer-payments-title">We Accept</p>

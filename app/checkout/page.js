@@ -1,23 +1,48 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   FiChevronRight,
+  FiCreditCard,
+  FiDollarSign,
   FiGrid,
   FiHome,
+  FiLock,
   FiPackage,
+  FiSmartphone,
   FiTruck,
   FiX
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
+
+const PAYMENT_OPTIONS = [
+  { id: "upi", label: "UPI / GPay / PhonePe", desc: "Instant & secure", icon: FiSmartphone },
+  { id: "cod", label: "Cash on Delivery", desc: "Pay when it arrives", icon: FiDollarSign },
+  { id: "card", label: "Card / Net Banking", desc: "Visa, Mastercard, RuPay", icon: FiCreditCard }
+];
 import { useCart } from "../context/CartContext";
 import { categories as menuCategories } from "../data/categories";
 import SiteFooter, { PaymentCards } from "../components/SiteFooter";
 
+const FREE_DELIVERY_THRESHOLD = 4999;
+const DELIVERY_CHARGE = 40;
+const toAmount = (value) => {
+  const match = String(value).replace(/,/g, "").match(/\d+(?:\.\d+)?/);
+  return match ? parseFloat(match[0]) : 0;
+};
+
 export default function CheckoutPage() {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const { items: cartItems, clear } = useCart();
+  const [form, setForm] = useState({ name: "", phone: "", pincode: "", address: "" });
+  const [payMethod, setPayMethod] = useState("upi");
+
+  const itemTotal = cartItems.reduce((sum, i) => sum + toAmount(i.price) * i.qty, 0);
+  const deliveryCharge = cartItems.length === 0 || itemTotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_CHARGE;
+  const grandTotal = itemTotal + deliveryCharge;
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -26,41 +51,89 @@ export default function CheckoutPage() {
     };
   }, [menuOpen]);
 
+  const updateField = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const placeOrder = () => {
+    if (cartItems.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+    if (!form.name.trim() || !form.phone.trim()) {
+      alert("Please enter your name and phone number.");
+      return;
+    }
+    const order = {
+      id: `KN-${Date.now().toString().slice(-6)}`,
+      customer: form.name.trim(),
+      phone: form.phone.trim(),
+      address: form.address.trim(),
+      pincode: form.pincode.trim(),
+      total: `Rs. ${grandTotal.toFixed(2)}`,
+      status: "Pending",
+      placedAt: new Date().toISOString(),
+      items: cartItems.map((i) => ({ title: i.title, qty: i.qty, price: i.price }))
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem("admin-orders") || "[]");
+      localStorage.setItem("admin-orders", JSON.stringify([order, ...existing]));
+    } catch {
+      localStorage.setItem("admin-orders", JSON.stringify([order]));
+    }
+    clear();
+    router.push(`/track-order?id=${order.id}`);
+  };
+
   return (
     <main className="mobile-page product-page">
       <section className="checkout-shell">
-        <div className="secure-pill">Secure Checkout</div>
+        <div className="secure-pill">
+          <FiLock /> Secure Checkout
+        </div>
         <h1>Checkout</h1>
         {cartItems.length === 0 && <p className="empty-small">Your cart is empty.</p>}
         <div className="checkout-card">
           <div className="card-head">
-            <h3>Delivery Address</h3>
-            <span className="sub-muted">We deliver in 1-3 days</span>
+            <h3>
+              <span className="step-badge">1</span>Delivery Address
+            </h3>
+            <span className="sub-muted">Delivered in 1-3 days</span>
           </div>
-          <input placeholder="Full Name" />
-          <input placeholder="Phone Number" />
-          <input placeholder="Pincode" />
-          <textarea placeholder="Full Address" rows={3} />
+          <input placeholder="Full Name" value={form.name} onChange={updateField("name")} />
+          <input placeholder="Phone Number" value={form.phone} onChange={updateField("phone")} />
+          <input placeholder="Pincode" value={form.pincode} onChange={updateField("pincode")} />
+          <textarea placeholder="Full Address" rows={3} value={form.address} onChange={updateField("address")} />
         </div>
 
         <div className="checkout-card">
           <div className="card-head">
-            <h3>Payment Method</h3>
+            <h3>
+              <span className="step-badge">2</span>Payment Method
+            </h3>
             <span className="sub-muted">No extra fees on prepaid</span>
           </div>
-          <label className="radio-line">
-            <input type="radio" name="pay" defaultChecked /> UPI / GPay / PhonePe
-          </label>
-          <label className="radio-line">
-            <input type="radio" name="pay" /> Cash on Delivery
-          </label>
-          <label className="radio-line">
-            <input type="radio" name="pay" /> Card / Net Banking
-          </label>
-          <div className="pay-grid">
-            <button type="button">Pay with UPI</button>
-            <button type="button">Pay with Card</button>
-            <button type="button">Net Banking</button>
+          <div className="pay-options">
+            {PAYMENT_OPTIONS.map((opt) => {
+              const Icon = opt.icon;
+              const selected = payMethod === opt.id;
+              return (
+                <button
+                  type="button"
+                  key={opt.id}
+                  className={`pay-option ${selected ? "selected" : ""}`}
+                  onClick={() => setPayMethod(opt.id)}
+                  aria-pressed={selected}
+                >
+                  <span className="pay-option-icon">
+                    <Icon />
+                  </span>
+                  <span className="pay-option-text">
+                    <strong>{opt.label}</strong>
+                    <span>{opt.desc}</span>
+                  </span>
+                  <span className={`pay-radio ${selected ? "on" : ""}`} />
+                </button>
+              );
+            })}
           </div>
           <div className="pay-accepted">
             <span className="pay-accepted-label">Accepted here</span>
@@ -69,28 +142,35 @@ export default function CheckoutPage() {
         </div>
 
         <div className="bill-card">
-          <h3>Order Summary</h3>
+          <h3>
+            <span className="step-badge">3</span>Order Summary
+          </h3>
+          {cartItems.length === 0 && <p className="empty-small">No products selected.</p>}
+          <div className="order-lines">
+            {cartItems.map((item) => (
+              <div className="order-line" key={item.slug}>
+                <div className={`order-line-thumb ${item.imageClass}`} />
+                <div className="order-line-info">
+                  <p>{item.title}</p>
+                  <span>
+                    {item.price} × {item.qty}
+                  </span>
+                </div>
+                <strong className="order-line-total">Rs. {(toAmount(item.price) * item.qty).toFixed(2)}</strong>
+              </div>
+            ))}
+          </div>
           <p>
             <span>Item Total</span>
-            <strong>
-              Rs.{" "}
-              {cartItems
-                .reduce((sum, i) => sum + parseFloat(i.price.replace(/[^\d.]/g, "")) * i.qty, 0)
-                .toFixed(2)}
-            </strong>
+            <strong>Rs. {itemTotal.toFixed(2)}</strong>
           </p>
           <p>
             <span>Delivery Charge</span>
-            <strong>Rs. 40.00</strong>
+            <strong>{deliveryCharge === 0 ? "FREE" : `Rs. ${deliveryCharge.toFixed(2)}`}</strong>
           </p>
           <p className="bill-total">
             <span>Total Payable</span>
-            <strong>
-              Rs.{" "}
-              {(
-                cartItems.reduce((sum, i) => sum + parseFloat(i.price.replace(/[^\d.]/g, "")) * i.qty, 0) + 40
-              ).toFixed(2)}
-            </strong>
+            <strong>Rs. {grandTotal.toFixed(2)}</strong>
           </p>
         </div>
 
@@ -100,16 +180,13 @@ export default function CheckoutPage() {
           <p>📦 Safe Packaging | Free Delivery above ₹4999</p>
         </div>
 
-        <button
-          type="button"
-          className="add-btn cart-checkout-btn"
-          onClick={() => {
-            clear();
-            alert("Order placed successfully!");
-          }}
-        >
-          Place Order
+        <button type="button" className="add-btn cart-checkout-btn checkout-place-btn" onClick={placeOrder}>
+          <span>Place Order</span>
+          {cartItems.length > 0 && <span className="checkout-place-total">Rs. {grandTotal.toFixed(2)}</span>}
         </button>
+        <p className="checkout-secure-note">
+          <FiLock /> 100% secure &amp; encrypted payment
+        </p>
       </section>
 
       <SiteFooter />
@@ -171,7 +248,7 @@ export default function CheckoutPage() {
           </span>
           <span>Cart</span>
         </Link>
-        <Link href="/checkout" className="bottom-item" aria-label="Track order">
+        <Link href="/track-order" className="bottom-item" aria-label="Track order">
           <span className="bottom-icon">
             <FiTruck />
           </span>

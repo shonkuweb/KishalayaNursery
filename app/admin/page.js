@@ -3,14 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-const initialOrders = [
-  { id: "KN-1001", customer: "Arjun", total: "Rs. 349.00", status: "Pending" },
-  { id: "KN-1002", customer: "Riya", total: "Rs. 799.00", status: "Packed" }
-];
-
 export default function AdminPage() {
   const [active, setActive] = useState("Orders");
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [settings, setSettings] = useState({
     supportPhone: "",
@@ -23,7 +18,11 @@ export default function AdminPage() {
     const savedOrders = localStorage.getItem("admin-orders");
     const savedProducts = localStorage.getItem("admin-products");
     const savedSettings = localStorage.getItem("admin-settings");
-    if (savedOrders) setOrders(JSON.parse(savedOrders));
+    if (savedOrders) {
+      const parsed = JSON.parse(savedOrders);
+      const cleaned = parsed.filter((o) => o.id !== "KN-1001" && o.id !== "KN-1002");
+      setOrders(cleaned);
+    }
     if (savedProducts) setProducts(JSON.parse(savedProducts));
     if (savedSettings) setSettings(JSON.parse(savedSettings));
   }, []);
@@ -34,7 +33,11 @@ export default function AdminPage() {
 
   const orderCount = useMemo(() => orders.length, [orders]);
   const revenue = useMemo(
-    () => orders.reduce((sum, o) => sum + parseFloat(String(o.total).replace(/[^\d.]/g, "") || 0), 0),
+    () =>
+      orders.reduce((sum, o) => {
+        const match = String(o.total).replace(/,/g, "").match(/\d+(?:\.\d+)?/);
+        return sum + (match ? parseFloat(match[0]) : 0);
+      }, 0),
     [orders]
   );
   const pendingCount = useMemo(() => orders.filter((o) => o.status === "Pending").length, [orders]);
@@ -83,6 +86,7 @@ export default function AdminPage() {
           <article className="admin-card admin-panel">
             <h2>Orders ({orderCount})</h2>
             <p>Track and update order status.</p>
+            {orders.length === 0 && <p className="admin-empty">No orders yet. New orders will appear here automatically.</p>}
             {orders.map((order) => (
               <div className="admin-row" key={order.id}>
                 <div>

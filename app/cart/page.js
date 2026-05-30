@@ -24,12 +24,14 @@ export default function CartPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { items: cartItems, updateQty, removeItem } = useCart();
 
+  const toAmount = (value) => {
+    const match = String(value).replace(/,/g, "").match(/\d+(?:\.\d+)?/);
+    return match ? parseFloat(match[0]) : 0;
+  };
   const itemCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
-  const subtotal = cartItems.reduce((sum, i) => sum + parseFloat(i.price.replace(/[^\d.]/g, "")) * i.qty, 0);
-  const savings = cartItems.reduce(
-    (sum, i) => sum + (parseFloat(i.oldPrice.replace(/[^\d.]/g, "")) - parseFloat(i.price.replace(/[^\d.]/g, ""))) * i.qty,
-    0
-  );
+  const subtotal = cartItems.reduce((sum, i) => sum + toAmount(i.price) * i.qty, 0);
+  const savings = cartItems.reduce((sum, i) => sum + (toAmount(i.oldPrice) - toAmount(i.price)) * i.qty, 0);
+  const deliveryCharge = subtotal >= 4999 ? 0 : 40;
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -87,12 +89,7 @@ export default function CartPage() {
               <h3>Bill Details</h3>
               <p>
                 <span>Item Total</span>
-                <strong>
-                  Rs.{" "}
-                  {cartItems
-                    .reduce((sum, i) => sum + parseFloat(i.price.replace(/[^\d.]/g, "")) * i.qty, 0)
-                    .toFixed(2)}
-                </strong>
+                <strong>Rs. {subtotal.toFixed(2)}</strong>
               </p>
               {savings > 0 && (
                 <p className="bill-savings">
@@ -102,11 +99,11 @@ export default function CartPage() {
               )}
               <p>
                 <span>Delivery Charge</span>
-                <strong>Rs. 40.00</strong>
+                <strong>{deliveryCharge === 0 ? "FREE" : `Rs. ${deliveryCharge.toFixed(2)}`}</strong>
               </p>
               <p className="bill-total">
                 <span>To Pay</span>
-                <strong>Rs. {(subtotal + 40).toFixed(2)}</strong>
+                <strong>Rs. {(subtotal + deliveryCharge).toFixed(2)}</strong>
               </p>
             </div>
 
@@ -191,7 +188,7 @@ export default function CartPage() {
           </span>
           <span>Cart</span>
         </Link>
-        <Link href="/checkout" className="bottom-item" aria-label="Track order">
+        <Link href="/track-order" className="bottom-item" aria-label="Track order">
           <span className="bottom-icon">
             <FiTruck />
           </span>

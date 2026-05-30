@@ -211,7 +211,7 @@ export default function Home() {
           </span>
           <span>Cart</span>
         </Link>
-        <Link href="/checkout" className="bottom-item" aria-label="Track order">
+        <Link href="/track-order" className="bottom-item" aria-label="Track order">
           <span className="bottom-icon">
             <FiTruck />
           </span>
