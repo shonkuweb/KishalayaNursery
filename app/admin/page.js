@@ -33,6 +33,11 @@ export default function AdminPage() {
   useEffect(() => localStorage.setItem("admin-settings", JSON.stringify(settings)), [settings]);
 
   const orderCount = useMemo(() => orders.length, [orders]);
+  const revenue = useMemo(
+    () => orders.reduce((sum, o) => sum + parseFloat(String(o.total).replace(/[^\d.]/g, "") || 0), 0),
+    [orders]
+  );
+  const pendingCount = useMemo(() => orders.filter((o) => o.status === "Pending").length, [orders]);
 
   const addProduct = () => {
     const name = prompt("Product name:");
@@ -46,8 +51,24 @@ export default function AdminPage() {
       <div className="top-strip">Kishaloy Nursery Admin Panel</div>
       <section className="admin-shell">
         <div className="admin-head">
+          <span className="admin-eyebrow">Kishalaya Nursery</span>
           <h1>Admin Dashboard</h1>
           <p className="sub-muted">Manage your store operations from one place.</p>
+        </div>
+
+        <div className="admin-stats">
+          <div className="admin-stat">
+            <span className="stat-value">{orderCount}</span>
+            <span className="stat-label">Total Orders</span>
+          </div>
+          <div className="admin-stat">
+            <span className="stat-value">Rs. {revenue.toFixed(0)}</span>
+            <span className="stat-label">Revenue</span>
+          </div>
+          <div className="admin-stat">
+            <span className="stat-value">{pendingCount}</span>
+            <span className="stat-label">Pending</span>
+          </div>
         </div>
 
         <div className="admin-tabs" role="tablist" aria-label="Admin sections">
@@ -65,7 +86,10 @@ export default function AdminPage() {
             {orders.map((order) => (
               <div className="admin-row" key={order.id}>
                 <div>
-                  <strong>{order.id}</strong>
+                  <div className="admin-row-top">
+                    <strong>{order.id}</strong>
+                    <span className={`status-badge status-${order.status.toLowerCase()}`}>{order.status}</span>
+                  </div>
                   <p>
                     {order.customer} • {order.total}
                   </p>

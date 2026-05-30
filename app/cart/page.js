@@ -6,8 +6,11 @@ import {
   FiChevronRight,
   FiGrid,
   FiHome,
+  FiMinus,
   FiPackage,
   FiPlus,
+  FiRefreshCw,
+  FiShield,
   FiTrash2,
   FiTruck,
   FiX
@@ -21,6 +24,13 @@ export default function CartPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { items: cartItems, updateQty, removeItem } = useCart();
 
+  const itemCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
+  const subtotal = cartItems.reduce((sum, i) => sum + parseFloat(i.price.replace(/[^\d.]/g, "")) * i.qty, 0);
+  const savings = cartItems.reduce(
+    (sum, i) => sum + (parseFloat(i.oldPrice.replace(/[^\d.]/g, "")) - parseFloat(i.price.replace(/[^\d.]/g, ""))) * i.qty,
+    0
+  );
+
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
@@ -31,9 +41,16 @@ export default function CartPage() {
   return (
     <main className="mobile-page product-page">
       <section className="cart-shell">
-        <h1>My Cart</h1>
+        <div className="cart-head">
+          <h1>My Cart</h1>
+          {cartItems.length > 0 && <span className="cart-count">{itemCount} item{itemCount > 1 ? "s" : ""}</span>}
+        </div>
+        {savings > 0 && (
+          <div className="savings-banner">🎉 You're saving Rs. {savings.toFixed(0)} on this order!</div>
+        )}
         {cartItems.length === 0 && (
           <div className="empty-block">
+            <div className="empty-emoji">🪴</div>
             <p>Your cart is empty.</p>
             <Link className="add-btn" href="/">
               Continue Shopping
@@ -49,11 +66,11 @@ export default function CartPage() {
               <strong>{item.price}</strong>
               <span>{item.oldPrice}</span>
               <div className="qty-box">
-                <button type="button" onClick={() => updateQty(item.slug, item.qty - 1)}>
-                  −
+                <button type="button" aria-label="Decrease quantity" onClick={() => updateQty(item.slug, item.qty - 1)}>
+                  <FiMinus />
                 </button>
                 <strong>{item.qty}</strong>
-                <button type="button" onClick={() => updateQty(item.slug, item.qty + 1)}>
+                <button type="button" aria-label="Increase quantity" onClick={() => updateQty(item.slug, item.qty + 1)}>
                   <FiPlus />
                 </button>
               </div>
@@ -77,24 +94,40 @@ export default function CartPage() {
                     .toFixed(2)}
                 </strong>
               </p>
+              {savings > 0 && (
+                <p className="bill-savings">
+                  <span>Discount</span>
+                  <strong>− Rs. {savings.toFixed(2)}</strong>
+                </p>
+              )}
               <p>
                 <span>Delivery Charge</span>
                 <strong>Rs. 40.00</strong>
               </p>
               <p className="bill-total">
                 <span>To Pay</span>
-                <strong>
-                  Rs.{" "}
-                  {(
-                    cartItems.reduce((sum, i) => sum + parseFloat(i.price.replace(/[^\d.]/g, "")) * i.qty, 0) + 40
-                  ).toFixed(2)}
-                </strong>
+                <strong>Rs. {(subtotal + 40).toFixed(2)}</strong>
               </p>
             </div>
 
             <Link href="/checkout" className="add-btn cart-checkout-btn">
               Proceed to Checkout
             </Link>
+
+            <div className="cart-trust-row">
+              <div className="cart-trust-item">
+                <FiShield />
+                <span>Secure Payments</span>
+              </div>
+              <div className="cart-trust-item">
+                <FiTruck />
+                <span>Fast Delivery</span>
+              </div>
+              <div className="cart-trust-item">
+                <FiRefreshCw />
+                <span>14-Day Replace</span>
+              </div>
+            </div>
           </>
         )}
       </section>
