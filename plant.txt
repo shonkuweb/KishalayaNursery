@@ -1,0 +1,30 @@
+we are developing Kishaloy Website. the client referenced a website gogreenkol.in. we want to develop the site such that it can be modified , fast , compute efficient.
+features of the site is : 
+1. it will have frontend , databse, backend , payment gateway.
+
+architecture : the frontend, backend and database will be in the VPS , and the images and media files will be in the cloudflare. 
+
+how many pages the website will have :
+
+user side : 
+a. home
+b. catagories
+c. contact us
+d. term and condition
+e. privacy policy
+f. refund and return policy
+g. shipping policy
+f. checkout
+g. order tracking
+h. payment status
+
+features of admin panel :
+
+1. password protected 
+2. order section (can see orders and change there status)
+3. products section (add new product , edit existing product , delete old product)
+4. settings (can change password , set m. delivery quantity , delivery price and free delivery time line.)
+
+technologies will be used :
+
+1. 
